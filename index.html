@@ -1391,7 +1391,7 @@ function abrirPin(obligatorio){
 
 function init(){
   if(window.APP_LOGO && window.APP_LOGO.indexOf('data:')===0){ $('#logoLogin').src = window.APP_LOGO; $('#logoTop').src = window.APP_LOGO; }
-  if(!enAppsScript){ $('#previewBanner').hidden = false;
+  if(!enAppsScript && !enNetlify){ $('#previewBanner').hidden = false;
     if(window.APP_PREVIEW_AUTOLOGIN){ $('#lgUser').value='demo'; api('appLogin','demo','123456').then(entrar); } }
 
   $('#loginForm').addEventListener('submit', async ev=>{
