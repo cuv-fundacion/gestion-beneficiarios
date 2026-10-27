@@ -241,6 +241,8 @@ td.name{font-weight:700;min-width:12rem}
 .doc-box h3{font-size:.95rem}
 .doc-box .row{display:flex;gap:.4rem;flex-wrap:wrap}
 .doc-links{display:flex;flex-direction:column;gap:.3rem;font-size:.85rem}
+.doc-abrir{display:flex;flex-wrap:wrap;align-items:center;gap:.4rem .6rem;border-top:1px dashed var(--line);padding-top:.5rem;margin-top:auto}
+.doc-abrir small{font-size:.78rem;overflow-wrap:anywhere}
 .doc-links a{color:var(--accent);font-weight:700}
 
 /* ---------- Editor del estudio socioeconómico ---------- */
@@ -840,6 +842,7 @@ async function abrirFicha(fila){
     const f = await api('appObtenerFicha', S.token, n.fila, n.clave, n.nombre);
     pintarFicha(f, n);
     cargarCitas().then(()=>pintarCitasFicha(f)).catch(()=>{});
+    api('appDocsNino', S.token, f.fila, f.nombre).then(r=>pintarDocsNino(f, r)).catch(()=>pintarDocsNino(f, null));
   }catch(e){ manejarError(e); d.querySelector('.loading').innerHTML = '<span class="err">'+esc(errMsg(e))+'</span>'; }
 }
 function iniciales(s){ return String(s).split(/\s+/).filter(Boolean).slice(0,2).map(p=>p[0]).join('').toUpperCase(); }
@@ -929,11 +932,19 @@ function panelDocs(f){
   return '<div class="panel"><div class="panel-head"><h2>Documentos y estudio</h2><small>Usan las plantillas de siempre</small></div><div class="docs">'+
     '<div class="doc-box"><h3>Primer encuentro y carátula</h3>'+
       (d.tienePE ? '<div class="row"><button class="btn primary" data-doc="caratula">Generar carátula</button><button class="btn" data-doc="pe">Editar primer encuentro</button></div>'
-                 : '<div class="row"><button class="btn primary" data-doc="pe">'+(/^\d+$/.test(f.clave)?'Registrar primer encuentro (retomado)':'Comenzar primer encuentro')+'</button></div><small class="muted">'+(/^\d+$/.test(f.clave)?'Conserva su expediente '+esc(f.clave)+'.':'Aquí se le asigna su número de expediente.')+'</small>')+'</div>'+
+                 : '<div class="row"><button class="btn primary" data-doc="pe">'+(/^\d+$/.test(f.clave)?'Registrar primer encuentro (retomado)':'Comenzar primer encuentro')+'</button></div><small class="muted">'+(/^\d+$/.test(f.clave)?'Conserva su expediente '+esc(f.clave)+'.':'Aquí se le asigna su número de expediente.')+'</small>')+'<div class="doc-abrir" id="docCar"><small class="muted">Buscando carátula…</small></div></div>'+
     '<div class="doc-box"><h3>Estudio socioeconómico</h3>'+
       (d.filaSE ? '<div class="row"><button class="btn primary" data-doc="se-editar">Llenar / editar estudio</button><button class="btn" data-doc="se-doc">Generar documento</button></div><small class="muted">Bloque en la fila '+d.filaSE+' de Estudio_SE.</small>'
-                : '<div class="row"><button class="btn primary" data-doc="se-iniciar">Iniciar estudio</button></div><small class="muted">Crea su bloque de 12 filas en Estudio_SE con sus datos generales.</small>')+'</div>'+
+                : '<div class="row"><button class="btn primary" data-doc="se-iniciar">Iniciar estudio</button></div><small class="muted">Crea su bloque de 12 filas en Estudio_SE con sus datos generales.</small>')+'<div class="doc-abrir" id="docSE"><small class="muted">Buscando estudio…</small></div></div>'+
     '</div><div class="doc-links" id="docLinks">'+links+'</div></div>';
+}
+function pintarDocsNino(f, r){
+  if(fichaActual !== f) return;   // ya se abrió otra ficha
+  const uno = (id, d, texto, falta) => { const box = $(id); if(!box) return;
+    box.innerHTML = d ? '<a class="btn" href="'+esc(d.url)+'" target="_blank" rel="noopener">'+texto+'</a><small class="muted">'+esc(d.nombre)+(d.fecha?' · '+esc(d.fecha):'')+'</small>'
+                      : (r ? '<small class="muted">'+falta+'</small>' : '<small class="muted">No se pudo revisar la carpeta.</small>'); };
+  uno('#docCar', r && r.caratula, 'Abrir carátula', 'Aún no hay carátula en su carpeta.');
+  uno('#docSE', r && r.estudio, 'Abrir estudio SE', 'Aún no hay documento del estudio en su carpeta.');
 }
 function agregarLink(clave, r){
   (DOCS_GENERADOS[clave]=DOCS_GENERADOS[clave]||[]).unshift(r);
