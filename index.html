@@ -557,7 +557,7 @@ img.d-photo{cursor:zoom-in}
     <div class="panel-head"><h2 id="etTitulo">Actualizar etapa</h2><button class="btn ghost" type="button" id="etCerrar">Cerrar</button></div>
     <div class="muted" id="etNino" style="margin-top:-.5rem;font-size:.85rem"></div>
     <div class="et-campos" id="etCampos"></div>
-    <div class="field"><label for="etFecha">Fecha en que pasó</label><input id="etFecha" class="input" type="date"></div>
+    <div class="field" id="etFechaF"><label for="etFecha">Fecha en que pasó</label><input id="etFecha" class="input" type="date"></div>
     <div class="field"><label for="etNota">Nota para el seguimiento (opcional)</label><textarea id="etNota" class="input" placeholder="Por ejemplo: valoración con el doctor, motivo de la baja…"></textarea></div>
     <div class="note">Se guarda en Expedientes y se escribe una nota con tu nombre en el seguimiento del niño.</div>
     <div class="err" id="etErr"></div>
@@ -1467,6 +1467,9 @@ async function abrirEtapa(etapa){
       return '<div class="field"><label for="'+id+'">'+esc(c.label)+'</label>'+input+'</div>';
     }).join('');
     $('#etFecha').value = d.hoy; $('#etNota').value = ''; $('#etErr').textContent = '';
+    // Si la etapa ya trae su propia fecha (la de la cirugía), no se pide otra
+    ET.fechaPropia = (d.campos.find(c=>c.tipo==='fecha')||{}).k || '';
+    $('#etFechaF').hidden = !!ET.fechaPropia;
     $('#etModal').hidden = false;
     const primero = $('#etCampos [data-k]'); if(primero) primero.focus();
   }catch(e){ manejarError(e); }
@@ -1475,7 +1478,7 @@ function cerrarEtapa(){ $('#etModal').hidden = true; ET = null; }
 async function guardarEtapa(ev){
   ev.preventDefault(); if(!ET) return;
   const valores = {}; $$('#etCampos [data-k]').forEach(i=>{ valores[i.dataset.k] = i.value; });
-  const datos = { valores:valores, fecha:$('#etFecha').value, nota:$('#etNota').value };
+  const datos = { valores:valores, fecha:(ET.fechaPropia ? (valores[ET.fechaPropia] || $('#etFecha').value) : $('#etFecha').value), nota:$('#etNota').value };
   const b = $('#etGuardar'); b.disabled = true; $('#etErr').textContent = '';
   try{
     const r = await conEspera('Guardando…', ()=>api('appEtapaGuardar', S.token, ET.fila, ET.nombre, ET.etapa, datos));
