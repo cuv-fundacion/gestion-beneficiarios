@@ -1,2 +1,13 @@
+# Las vistas previas de los links (WhatsApp, Facebook, correo, etc.) sí pueden leer la portada
+User-agent: facebookexternalhit
+User-agent: WhatsApp
+User-agent: Twitterbot
+User-agent: LinkedInBot
+User-agent: Slackbot
+User-agent: TelegramBot
+User-agent: Discordbot
+Allow: /
+
+# Buscadores: no
 User-agent: *
 Disallow: /
