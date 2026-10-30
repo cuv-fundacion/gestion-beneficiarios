@@ -213,6 +213,8 @@ td.name{font-weight:700;min-width:12rem}
 .step .upd{margin-top:auto;align-self:flex-start;border:0;background:none;padding:.25rem 0 0;color:var(--accent);font:inherit;font-size:.78rem;font-weight:700;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
 .step .upd:hover{color:var(--magenta)}
 .et-campos{display:flex;flex-direction:column;gap:.7rem}
+.input.curp{text-transform:uppercase;letter-spacing:.08em;font-family:ui-monospace,Menlo,Consolas,monospace}
+.input.mal{border-color:var(--terra);box-shadow:0 0 0 3px var(--terra-soft)}
 .kv{display:grid;grid-template-columns:minmax(0,11rem) minmax(0,1fr);gap:.35rem 1rem;font-size:.9rem;margin:0}
 .kv dt{color:var(--muted)} .kv dd{margin:0;overflow-wrap:anywhere}
 .notes{display:flex;flex-direction:column;gap:.6rem;margin:0;padding:0;list-style:none}
@@ -415,8 +417,10 @@ img.d-photo{cursor:zoom-in}
       <div class="field"><label for="fDx">Diagnóstico</label><select id="fDx" class="select"></select></div>
       <div class="field"><label for="fEstatus">Estatus actual</label><select id="fEstatus" class="select"></select></div>
       <div class="field"><label for="fEstado">Estado</label><select id="fEstado" class="select"></select></div>
+      <div class="field"><label for="fMunicipio">Municipio</label><select id="fMunicipio" class="select"></select></div>
       <div class="field"><label for="fSexo">Sexo</label><select id="fSexo" class="select"></select></div>
       <div class="field"><label for="fDoctor">Doctor</label><select id="fDoctor" class="select"></select></div>
+      <div class="field"><label for="fJornada">Jornada</label><select id="fJornada" class="select"></select></div>
       <button class="btn clear" id="btnClear" type="button">Quitar filtros</button>
     </div>
 
@@ -668,7 +672,7 @@ const fmt = n => Number(n).toLocaleString('es-MX');
 const pct = (a,b) => b ? Math.round(a*100/b)+'%' : '—';
 
 const S = { token:null, user:null, ninos:[], calidad:null, stamp:'', vista:'tablero', visibles:100,
-  f:{anio:'',dx:'',estatus:'',estado:'',sexo:'',doctor:''}, etapa:'', q:'' };
+  f:{anio:'',dx:'',estatus:'',estado:'',municipio:'',sexo:'',doctor:'',jornada:''}, etapa:'', q:'' };
 
 /* ================= Reglas para leer las etapas =================
    Se respetan los valores tal como están en la base; aquí solo se agrupan. */
@@ -733,8 +737,11 @@ const FILTROS = [
   {id:'fDx', k:'dx', label:'Todos', val:n=>(n.dx||'').trim()},
   {id:'fEstatus', k:'estatus', label:'Todos', val:n=>(n.estatus||'').trim()},
   {id:'fEstado', k:'estado', label:'Todos', val:n=>(n.estado||'').trim()},
+  {id:'fMunicipio', k:'municipio', label:'Todos', val:n=>(n.municipio||'').trim()},
   {id:'fSexo', k:'sexo', label:'Todos', val:n=>(n.sexo||'').trim()},
-  {id:'fDoctor', k:'doctor', label:'Todos', val:n=>(n.doctor||'').trim()}
+  {id:'fDoctor', k:'doctor', label:'Todos', val:n=>(n.doctor||'').trim()},
+  // Año de la jornada: toma el año de lo que diga la celda ("2024", "Jornada 2024", "15/08/2024"…)
+  {id:'fJornada', k:'jornada', label:'Todas', val:n=>{ const j=String(n.jornada||'').trim(); const m=j.match(/(19|20)\d{2}/); return m?m[0]:j; }, sort:(a,b)=>b.localeCompare(a)}
 ];
 function llenarFiltros(){
   FILTROS.forEach(F=>{
@@ -1306,6 +1313,7 @@ function abrirPE(pr){
       '<div class="numbox">'+numero+'</div>'+
       (pr.modo!=='editar' && !pr.carpetaConfigurada ? '<div class="note">La carpeta de Drive no se creará porque falta pegar el ID de la carpeta EXPEDIENTES en la configuración.</div>' : '')+
       '<div class="se-sec"><h3>1. Datos del niño</h3><div class="se-grid">'+
+        campo('pe_curp','CURP *','<input class="input curp" id="pe_curp" value="'+esc(d.curp||'')+'" maxlength="18" autocomplete="off" spellcheck="false" placeholder="18 caracteres"><small class="muted" id="pe_curpMsg">Obligatoria. Con ella se llenan solas la fecha de nacimiento y el sexo.</small>','wide')+
         t('pe_nombre','Nombre completo',d.nombre,'wide')+
         campo('pe_nacimiento','Fecha de nacimiento','<input class="input" type="date" id="pe_nacimiento" value="'+esc(d.nacimiento)+'">')+
         campo('pe_sexo','Sexo',sel('pe_sexo',d.sexo,o.sexo))+campo('pe_dx','Diagnóstico',sel('pe_dx',d.dx,o.dx))+
@@ -1328,15 +1336,35 @@ function abrirPE(pr){
     '</div>'+
     '<div class="se-foot"><div class="se-foot-in"><span id="peEstado" class="saved">'+(pr.modo==='editar'?'Sin cambios':'Llena los datos y guarda')+'</span>'+
       '<button class="btn primary" id="peGuardar">'+(pr.modo==='nuevo'?'Guardar y asignar expediente':'Guardar primer encuentro')+'</button></div></div>';
-  $('#peEditor').hidden = false; $('#peEditor').scrollTop = 0;
+  $('#peEditor').hidden = false; $('#peEditor').scrollTop = 0; revisarCurp(false);
 }
 function datosPE(){
   const v = id => ($('#pe_'+id)||{}).value || '';
-  return { nombre:v('nombre'), nacimiento:v('nacimiento'), sexo:v('sexo'), dx:v('dx'), estado:v('estado'), domicilio:v('domicilio'),
+  return { curp:v('curp').toUpperCase().replace(/\s+/g,''), nombre:v('nombre'), nacimiento:v('nacimiento'), sexo:v('sexo'), dx:v('dx'), estado:v('estado'), domicilio:v('domicilio'),
     escolaridad:v('escolaridad'), grado:v('grado'), trunca:v('trunca'), papa:v('papa'), celPapa:v('celPapa'), mama:v('mama'), celMama:v('celMama'),
     otro:v('otro'), parentesco:v('parentesco'), celOtro:v('celOtro'), anotaciones:v('anotaciones'), foto:v('foto'), modalidad:v('modalidad') };
 }
+const CURP_RE = /^[A-Z][AEIOUX][A-Z]{2}\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])[HMX](AS|BC|BS|CC|CL|CM|CS|CH|DF|DG|GT|GR|HG|JC|MC|MN|MS|NT|NL|OC|PL|QT|QR|SP|SL|SR|TC|TS|TL|VZ|YN|ZS|NE)[B-DF-HJ-NP-TV-Z]{3}[A-Z\d]\d$/;
+// Al escribir la CURP: mayúsculas, revisa el formato y llena fecha de nacimiento y sexo si están vacíos
+function revisarCurp(llenar){
+  const i = $('#pe_curp'); if(!i) return true;
+  const c = i.value.toUpperCase().replace(/\s+/g,''); if(i.value !== c) i.value = c;
+  const msg = $('#pe_curpMsg'); const ok = CURP_RE.test(c);
+  i.classList.toggle('mal', !!c && c.length===18 && !ok);
+  if(!c) msg.textContent = 'Obligatoria. Con ella se llenan solas la fecha de nacimiento y el sexo.';
+  else if(c.length<18) msg.textContent = 'Faltan '+(18-c.length)+' caracteres.';
+  else msg.textContent = ok ? 'CURP válida.' : 'Revisa la CURP: el formato no es válido.';
+  if(ok && llenar){
+    const yy = +c.slice(4,6), siglo = /\d/.test(c[16]) ? 1900 : 2000;
+    const fecha = (siglo+yy)+'-'+c.slice(6,8)+'-'+c.slice(8,10);
+    const nac = $('#pe_nacimiento'); if(nac && !nac.value){ nac.value = fecha; }
+    const sx = $('#pe_sexo'); if(sx && !sx.value){ const quiere = c[10]==='H' ? 'masc' : c[10]==='M' ? 'fem' : ''; const op = Array.from(sx.options).find(o=>norm(o.value).indexOf(quiere)===0); if(quiere && op) sx.value = op.value; }
+  }
+  return ok;
+}
 async function guardarPE(){
+  const curp = ($('#pe_curp')||{}).value || '';
+  if(!revisarCurp(false) && (PE.modo!=='editar' || curp)){ const i=$('#pe_curp'); i.focus(); i.scrollIntoView({block:'center'}); return toast(curp ? 'Revisa la CURP: el formato no es válido.' : 'La CURP es obligatoria para el primer encuentro.'); }
   const b = $('#peGuardar'); b.disabled = true; b.textContent = 'Guardando…';
   try{
     const modoAntes = PE.modo;
@@ -1649,6 +1677,7 @@ function init(){
     $('#ciEst').value = b.dataset.q; guardarCita();
   });
   // ---- Primer encuentro ----
+  $('#peEditor').addEventListener('input', e=>{ if(e.target && e.target.id==='pe_curp') revisarCurp(true); });
   $('#peEditor').addEventListener('input', ()=>{ peSucio=true; peArmado=false; const st=$('#peEstado'); if(st){ st.className='dirty'; st.textContent='Cambios sin guardar'; } });
   $('#peEditor').addEventListener('click', async e=>{
     if(e.target.closest('#peCerrar')) return cerrarPE();
