@@ -463,7 +463,7 @@ img.d-photo{cursor:zoom-in}
       </div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Exp.</th><th>Nombre</th><th>Diagnóstico</th><th>Registro</th><th>Proceso</th><th>Estatus</th></tr></thead>
+          <thead><tr><th>Exp.</th><th>Nombre</th><th>Diagnóstico</th><th>Municipio</th><th>Registro</th><th>Proceso</th><th>Estatus</th></tr></thead>
           <tbody id="tbody"></tbody>
         </table>
         <div class="more" id="moreWrap" hidden><button class="btn" id="btnMore">Ver más</button></div>
@@ -831,10 +831,10 @@ function pintarLista(){
   const vis = lista.slice(0,S.visibles);
   $('#tbody').innerHTML = vis.length ? vis.map(n=>{
     const g = grupoEstatus(n.estatus);
-    return '<tr data-fila="'+n.fila+'"><td class="num">'+esc(n.exp||'—')+'</td><td class="name">'+esc(n.nombre)+'</td><td>'+esc(n.dx)+'</td><td class="num" title="'+esc(n.registro?'Registrado el '+n.registro:'Solo se conoce el año')+'">'+esc(n.registro||n.anio)+'</td>'+
+    return '<tr data-fila="'+n.fila+'"><td class="num">'+esc(n.exp||'—')+'</td><td class="name">'+esc(n.nombre)+'</td><td>'+esc(n.dx)+'</td><td class="mun">'+(n.municipio?esc(n.municipio):'<span class="muted">—</span>')+'</td><td class="num" title="'+esc(n.registro?'Registrado el '+n.registro:'Solo se conoce el año')+'">'+esc(n.registro||n.anio)+'</td>'+
       '<td><div class="dots">'+DOTS.map(d=>'<span class="dot '+n[d[0]]+'" title="'+d[1]+'">'+d[1]+'</span>').join('')+'</div></td>'+
       '<td>'+(n.estatus?'<span class="chip '+g+'">'+esc(n.estatus)+'</span>':'<span class="muted">—</span>')+'</td></tr>';
-  }).join('') : '<tr><td colspan="6" class="muted" style="text-align:center;padding:2rem">No hay niños con estos filtros.</td></tr>';
+  }).join('') : '<tr><td colspan="7" class="muted" style="text-align:center;padding:2rem">No hay niños con estos filtros.</td></tr>';
   $('#moreWrap').hidden = lista.length <= S.visibles;
 }
 
