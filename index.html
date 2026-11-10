@@ -1381,10 +1381,11 @@ async function guardarPE(){
     b.textContent = 'Guardar primer encuentro';
     // refrescar datos (el niño ya tiene número)
     S.citas = null;
+    if(r.nombre) fichaActual.nombre = r.nombre;   // por si se corrigió el nombre
     const nombre = fichaActual.nombre;
     await cargarDatos();
-    const n = S.ninos.find(x=>norm(x.nombre)===norm(nombre));
-    if(n){ fichaActual.clave = n.clave; fichaActual.exp = n.exp; fichaActual.docs = fichaActual.docs || {}; fichaActual.docs.tienePE = true; }
+    const n = S.ninos.find(x=>norm(x.nombre)===norm(nombre)) || S.ninos.find(x=>String(x.clave)===String(r.numero));
+    if(n){ fichaActual.nombre = n.nombre; fichaActual.fila = n.fila || fichaActual.fila; fichaActual.clave = n.clave; fichaActual.exp = n.exp; fichaActual.docs = fichaActual.docs || {}; fichaActual.docs.tienePE = true; }
   }catch(e){ manejarError(e); b.textContent = PE.modo==='nuevo'?'Guardar y asignar expediente':'Guardar primer encuentro'; }
   finally{ b.disabled = false; }
 }
