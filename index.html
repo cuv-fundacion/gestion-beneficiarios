@@ -1368,13 +1368,13 @@ async function guardarPE(){
   const b = $('#peGuardar'); b.disabled = true; b.textContent = 'Guardando…';
   try{
     const modoAntes = PE.modo;
-    const r = await conEspera(PE.modo==='nuevo'?'Asignando expediente y creando su carpeta…':'Guardando el primer encuentro…', ()=>api('appPEGuardar', S.token, PE.filaExp, fichaActual.nombre, datosPE()));
-    listo(modoAntes==='nuevo'?'Expediente '+(r.expTexto||r.numero)+' asignado':'Primer encuentro guardado', r.avisos, r.carpeta?{url:r.carpeta, texto:'Abrir carpeta'}:null);
+    const r = await conEspera(PE.modo==='nuevo'?'Asignando expediente, creando su carpeta y su carátula…':'Guardando el primer encuentro y actualizando su carátula…', ()=>api('appPEGuardar', S.token, PE.filaExp, fichaActual.nombre, datosPE()));
+    listo(modoAntes==='nuevo'?'Expediente '+(r.expTexto||r.numero)+' asignado':'Primer encuentro guardado', r.avisos, r.caratula?{url:r.caratula, texto:'Abrir carátula'}:(r.carpeta?{url:r.carpeta, texto:'Abrir carpeta'}:null));
     peSucio = false;
     const box = $('#peResultado'); box.hidden = false;
     box.innerHTML = '<h3>Listo</h3><div class="numbox"><div><span class="muted">Expediente</span><br><b>'+esc(r.expTexto||r.numero)+'</b></div><div>'+r.avisos.map(a=>'<div>'+esc(a)+'</div>').join('')+'</div></div>'+
       '<div class="quick">'+(r.carpeta?'<a class="btn" href="'+esc(r.carpeta)+'" target="_blank" rel="noopener">Abrir carpeta</a>':'')+
-      '<button class="btn primary" data-pe-fin="caratula">Generar carátula</button><button class="btn" data-pe-fin="cerrar">Volver a la ficha</button></div>';
+      (r.caratula?'<a class="btn primary" href="'+esc(r.caratula)+'" target="_blank" rel="noopener">Abrir carátula</a>':'<button class="btn primary" data-pe-fin="caratula">Generar carátula</button>')+'<button class="btn" data-pe-fin="cerrar">Volver a la ficha</button></div>';
     box.scrollIntoView({block:'center'});
     $('#peEstado').className='saved'; $('#peEstado').textContent='Guardado';
     PE.modo = 'editar'; PE.numero = r.numero; PE.expTexto = r.expTexto;
